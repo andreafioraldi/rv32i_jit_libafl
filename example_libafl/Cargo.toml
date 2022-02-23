@@ -1,0 +1,11 @@
+[package]
+name = "example_libafl"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+vm = { path = ".." }
+libafl = { git = "https://github.com/AFLplusplus/LibAFL", rev = "05b10ad56da7044cb256ef4a8718c26fecc1375b", features = ["default", "introspection"] }
+portpicker = "0.1.1"
