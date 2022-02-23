@@ -17,7 +17,7 @@ use libafl::{
     fuzzer::{Fuzzer, StdFuzzer},
     generators::RandPrintablesGenerator,
     inputs::{BytesInput, HasTargetBytes},
-    monitors::tui::TuiMonitor,
+    monitors::MultiMonitor,
     mutators::scheduled::{havoc_mutations, StdScheduledMutator},
     observers::ListObserver,
     stages::mutational::StdMutationalStage,
@@ -46,9 +46,11 @@ fn add_coverage(pc: u32) {
 }
 
 pub fn main() {
-    let mut orig_vm =
-        OurVm::from_felf("../example_snapshot_fuzzer/test_app/x509-parser.felf", &["x509-parser", "example.der"])
-            .expect("Loading failed");
+    let mut orig_vm = OurVm::from_felf(
+        "../example_snapshot_fuzzer/test_app/x509-parser.felf",
+        &["x509-parser", "example.der"],
+    )
+    .expect("Loading failed");
     orig_vm.jit().expect("JIT failed");
 
     // Run the original VM until it hits the fuzz case start syscall
@@ -182,7 +184,7 @@ pub fn main() {
     println!("Picking the free port {}", port);
 
     let shmem_provider = StdShMemProvider::new().expect("Failed to init shared memory");
-    let monitor = TuiMonitor::new("rv32i_jit + libafl fuzzer".into(), true);
+    let monitor = MultiMonitor::new(|s| println!("{}", s));
 
     match Launcher::builder()
         .shmem_provider(shmem_provider)
