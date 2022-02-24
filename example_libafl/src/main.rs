@@ -188,7 +188,7 @@ pub fn main() {
 
     match Launcher::builder()
         .shmem_provider(shmem_provider)
-        .configuration(EventConfig::from_build_id())
+        .configuration(EventConfig::AlwaysUnique)
         .monitor(monitor)
         .run_client(&mut run_client)
         // pin to the first core only one instance of the fuzzer if not specified
