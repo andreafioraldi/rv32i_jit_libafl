@@ -10,18 +10,17 @@ use libafl::{
         tuples::tuple_list,
         AsSlice,
     },
-    corpus::{InMemoryCorpus, OnDiskCorpus, RandCorpusScheduler},
+    corpus::{Corpus, InMemoryCorpus, OnDiskCorpus, RandCorpusScheduler},
     events::EventConfig,
     executors::{inprocess::InProcessExecutor, ExitKind},
     feedbacks::{CrashFeedback, ListFeedback},
     fuzzer::{Fuzzer, StdFuzzer},
-    generators::RandPrintablesGenerator,
     inputs::{BytesInput, HasTargetBytes},
     monitors::MultiMonitor,
     mutators::scheduled::{havoc_mutations, StdScheduledMutator},
     observers::ListObserver,
     stages::mutational::StdMutationalStage,
-    state::StdState,
+    state::{HasCorpus, StdState},
     Error,
 };
 
@@ -46,6 +45,8 @@ fn add_coverage(pc: u32) {
 }
 
 pub fn main() {
+    let corpus_dirs = [PathBuf::from("../example_snapshot_fuzzer/corpus")];
+
     let mut orig_vm = OurVm::from_felf(
         "../example_snapshot_fuzzer/test_app/x509-parser.felf",
         &["x509-parser", "example.der"],
@@ -164,11 +165,12 @@ pub fn main() {
         )
         .expect("Failed to create the Executor");
 
-        let mut generator = RandPrintablesGenerator::new(32);
-        // Generate 8 initial inputs
-        state
-            .generate_initial_inputs(&mut fuzzer, &mut executor, &mut generator, &mut mgr, 8)
-            .expect("Failed to generate the initial corpus");
+        if state.corpus().count() < 1 {
+            state
+                .load_initial_inputs(&mut fuzzer, &mut executor, &mut mgr, &corpus_dirs)
+                .unwrap_or_else(|_| panic!("Failed to load initial corpus at {:?}", &corpus_dirs));
+            println!("We imported {} inputs from disk.", state.corpus().count());
+        }
 
         let mutator = StdScheduledMutator::new(havoc_mutations());
         let mut stages = tuple_list!(StdMutationalStage::new(mutator));
